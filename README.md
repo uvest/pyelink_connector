@@ -20,16 +20,16 @@ If you want to use it only for pygame OR pyglet, see below.
 Install the package
 
 ```bash
-pip install --index-url https://test.pypi.org/simple/ pyelink-connector
+pip install pyelink-connector
 ```
 
 If you want to install only the dependencies for pygame use
 ```bash
-pip install --index-url https://test.pypi.org/simple/ pyelink-connector[pygame]
+pip install pyelink-connector[pygame]
 ```
 If you want to install only the dependencies for pyglet use
 ```bash
-pip install --index-url https://test.pypi.org/simple/ pyelink-connector[pyglet]
+pip install pyelink-connector[pyglet]
 ```
 
 If you have no running pylink version for your EyeLink 1000 + yet, also see [Installing pylink](#installing-pylink) below.
@@ -45,6 +45,7 @@ Other versions might work as well.
 It further requires software by [SR-Research](https://www.sr-research.com).
 
 ### Installing pylink
+<a name="installing-pylink"></a>
 #### System wide python
 You can find some support for installing pylink for communicating with an EyeLink, for example, on the [SR-Research forum](https://www.sr-research.com/support/thread-48.html).
 

@@ -24,3 +24,7 @@ pyglet = [
   "pyglet>=2.0.0",
   "screeninfo>=0.8.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/uvest/pyelink_connector"
+Issues = "https://github.com/uvest/pyelink_connector/issues"
