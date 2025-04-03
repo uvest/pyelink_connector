@@ -78,8 +78,6 @@ Example:
     then you can copy the contents of `C:\Program Files (x86)\SR Research\EyeLink\SampleExperiments\Python\64\3.12\pylink` to `C:\Users\USERNAME\.conda\envs\eyeLinkEnv\Lib\site-packages\pylink\`
 
 
-
-
 ## Usage
 Minimum example with pygame
 
