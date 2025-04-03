@@ -1,5 +1,7 @@
 ## Code structure
 
+**Deprecated**
+
 `pygletEyeLink.py` - contains the EyeConnector class which handles the communication with and setup of the EyeLink 1000+ (binocular mode only)
 
 `test_pygletEyeLink.py` - a simple testing script that showcases the usage of the pyglet pylink connector.

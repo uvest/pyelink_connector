@@ -9,21 +9,26 @@ from .utils import Target, MultiLineText
 from ..utils import *
 
 
-
 class EyeConnector():
-    def __init__(self, win:pygame.Surface, host:str="100.1.1.1", prefix:str="", download_directory:str="./eye_tracking/",
+    def __init__(self, win:pygame.Surface, host:str="100.1.1.1", eye:str="both", prefix:str="", download_directory:str="./eye_tracking/",
                  sample_rate:int=1000, clock:pygame.time.Clock|None=None) -> None:
         """Create connector object to communicate with an EyeLink 1000+.
         Args:
             host (str, optional): IP of the EyeLink Host PC. Defaults to "100.1.1.1".
+            eye (str, optional): Choose which eye to track. Options: ["both", "right", "left"]. Defaults to "both".
             prefix (str, optional): Session prefix. Will be added to all files handled by this connection. 
                                     Could, e.g., combine experiment and participant ID. Defaults to "".
             download_directory (str, optional): Local directory to store downloaded EDF files to. Defaults to "./eye_tracking/".
             sample_rate (int, optional): Sampling rate. Should not exceed 1000 for tracking both eyes. Defaults to 1000.
+            clock (pygame.time.Clock|None, optional): A pygame clock for keeping the framerate. Defaults to None.
         """
+        self.win = win
         self.host = host
         self.eyelink = self.connect(host)
-        self.win = win
+
+        assert(eye.lower() in ["both", "right", "left"])
+        self.eye = eye.lower()
+
         self.clock = clock if clock is not None else pygame.time.Clock()
 
         # Flags and behavioural atributes
@@ -113,15 +118,25 @@ class EyeConnector():
         self.eyelink.sendMessage(f"DISPLAY_COORDS 0 0 {self._w - 1} {self._h - 1}") # DISPLAY_COORDS msg is used by the DATA VIEWER
         self.eyelink.sendCommand(f"screen_pixel_coords = 0 0 {self._w - 1} {self._h - 1}") # This should be used for defining calibration targets... 
 
-        # track all eye events in the file ...
-        file_event_flags = 'LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON,INPUT'
-        file_sample_flags = 'LEFT,RIGHT,GAZE,HREF,RAW,AREA,HTARGET,GAZERES,BUTTON,STATUS,INPUT'
+        # track all eye events in the file
+        _eye_identifier = ''
+        if self.eye == "both":
+            _eye_identifier += 'LEFT,RIGHT,'
+        elif self.eye == "right":
+            _eye_identifier += 'RIGHT,'
+        elif self.eye == "left":
+            _eye_identifier += 'LEFT,'
+        else:
+            raise AssertionError("eye must be one of 'both', 'right' or 'left'.")
+
+        file_event_flags = _eye_identifier + 'FIXATION,SACCADE,BLINK,MESSAGE,BUTTON,INPUT'
+        file_sample_flags = _eye_identifier + 'GAZE,HREF,RAW,AREA,HTARGET,GAZERES,BUTTON,STATUS,INPUT'
         self.eyelink.setFileEventFilter(file_event_flags) # command file_event_filter
         self.eyelink.setFileSampleFilter(file_sample_flags) # command file_sample_data
 
         # ... and make them available via link
-        link_event_flags = 'LEFT,RIGHT,FIXATION,SACCADE,BLINK,BUTTON,FIXUPDATE,INPUT'
-        link_sample_flags = 'LEFT,RIGHT,GAZE,GAZERES,AREA,HTARGET,STATUS,INPUT'
+        link_event_flags = _eye_identifier + 'FIXATION,SACCADE,BLINK,BUTTON,FIXUPDATE,INPUT'
+        link_sample_flags = _eye_identifier + 'GAZE,GAZERES,AREA,HTARGET,STATUS,INPUT'
         self.eyelink.sendCommand(f"link_event_filter = {link_event_flags}")
         self.eyelink.sendCommand(f"link_sample_data = {link_sample_flags}")
         
@@ -169,31 +184,50 @@ class EyeConnector():
 
 
     ### COMMUNICATION
-    def getEyeSample(self) -> Tuple[Sample, Sample]:
+    def getEyeSample(self) -> Tuple[Sample, Sample] | Sample:
         """Return the latest eye sample. A sample contains 
             Gaze position as (x, y) in px
             HREF as (x, y) in px
             Pupil raw as (x, y) in px
             Pupil size as (x, y) in ?mycro meter?
 
+            If both eyes are tracked, a tuple of two samples is returned. Otherwise only one sample
+
         Returns:
             Tuple[Sample, Sample]: Sample of the Left and Sample of the Right eye.
         """
         s = self.eyelink.getNewestSample()
 
-        if s.isLeftSample():
-            l = s.getLeftEye()
-            ls = Sample(l.getGaze(), l.getHREF(), l.getRawPupil(), l.getPupilSize())
-        else:
-            ls = self.dummy_sample
+        if self.eye == "both":
+            if s.isLeftSample():
+                l = s.getLeftEye()
+                ls = Sample(l.getGaze(), l.getHREF(), l.getRawPupil(), l.getPupilSize())
+            else:
+                ls = self.dummy_sample
 
-        if s.isRightSample():
-            r = s.getRightEye()
-            rs = Sample(r.getGaze(), r.getHREF(), r.getRawPupil(), r.getPupilSize())
-        else:
-            rs = self.dummy_sample
+            if s.isRightSample():
+                r = s.getRightEye()
+                rs = Sample(r.getGaze(), r.getHREF(), r.getRawPupil(), r.getPupilSize())
+            else:
+                rs = self.dummy_sample
 
-        return (ls, rs)
+            return (ls, rs)
+        else:
+            if s.isLeftSample():
+                if self.eye == "left":
+                    l = s.getLeftEye()
+                    return Sample(l.getGaze(), l.getHREF(), l.getRawPupil(), l.getPupilSize())
+                else:
+                    raise(ValueError, "Expected left eye sample but received right eye sample.")
+            elif s.isRightSample():
+                if self.eye == "right":
+                    r = s.getRightEye()
+                    return Sample(r.getGaze(), r.getHREF(), r.getRawPupil(), r.getPupilSize())
+                else:
+                    raise(ValueError, "Expected right eye sample but received left eye sample.")
+            else:
+                raise(ValueError, "Received sample is neither left nor right.")
+                # return self.dummy_sample
 
 
     ####################### PYGAME specific
