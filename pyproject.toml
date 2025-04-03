@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyelink_connector"
+version = "0.0.1"
+authors = [
+  { name="Kai Streiling", email="kai.streiling@gmail.com" },
+]
+description = "A small EyeLink 1000+ connector class using pylink and supporting pygame and pyglet applications."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.optional-dependencies]
+pygame = ["pygame-ce>=2.5.0"]
+pyglet = [
+  "pyglet>=2.0.0",
+  "screeninfo>=0.8.1",
+]
