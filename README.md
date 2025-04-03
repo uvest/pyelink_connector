@@ -1,6 +1,6 @@
 ## EyeLink Connector Class for Pygame and Pyglet
 
-[pylink](https://pypi.org/project/PyLink/) is an awesome interface and offers great flexibility. <br>
+[pylink](https://pypi.org/project/PyLink/){:target="_blank"} is an awesome interface and offers great flexibility. <br>
 However, when setting up an eye-tracking application, you may want something with a bit higher-level interface.
 
 Also, it seems it only supports calibration for the backends `psychopy` and `pygame`, and not for `pyglet`.
@@ -42,19 +42,19 @@ The pylink_connector was built for the following packages
 
 Other versions might work as well.
 
-It further requires software by [SR-Research](https://www.sr-research.com).
+It further requires software by [SR-Research](https://www.sr-research.com){:target="_blank"}.
 
 ### Installing pylink
 #### System wide python
-You can find some support for installing pylink for communicating with an EyeLink, for example, on the [SR-Research forum](https://www.sr-research.com/support/thread-48.html).
+You can find some support for installing pylink for communicating with an EyeLink, for example, on the [SR-Research forum](https://www.sr-research.com/support/thread-48.html){:target="_blank"}.
 
 I have not tested their suggestion, because I was using a conda python environment.
 
 #### Using conda or other virtual python environments
-When working with a conda environment, only installing [pylink](https://pypi.org/project/PyLink/) with pip to was not sufficient to communicate with the EyeLink 1000 + in my case.
+When working with a conda environment, only installing [pylink](https://pypi.org/project/PyLink/){:target="_blank"} with pip to was not sufficient to communicate with the EyeLink 1000 + in my case.
 I figured out the following procedure to install pylink for communicating with an EyeLink
 
-1. Download and install the [SR-Research development kit](https://www.sr-research.com/support/showthread.php?tid=13). You need to register an account to access the page.
+1. Download and install the [SR-Research development kit](https://www.sr-research.com/support/showthread.php?tid=13){:target="_blank"}. You need to register an account to access the page.
 2. Create your conda environment with its own python version. For example
 
 ```bash
@@ -117,4 +117,4 @@ You can find more examples for pygame or pyglet on github.
 
 I am happy for any bug reports or feature requests! Please use github for these.
 
-If the pyelink-connector was helpful to you and you feel like supporting, you are welcome to [buy me a coffee](https://buymeacoffee.com/uvest) or simply [reach out](mailto:kai.streiling@gmail.com) and tell me how you made use of this package!
+If the pyelink-connector was helpful to you and you feel like supporting, you are welcome to [buy me a coffee](https://buymeacoffee.com/uvest){:target="_blank"} or simply [reach out](mailto:kai.streiling@gmail.com) and tell me how you made use of this package!
