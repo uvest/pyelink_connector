@@ -63,7 +63,7 @@ class SetupStage():
         self.terminated = True
 
 class TrialStage():
-    def __init__(self, win, batch, eyeConnector, name="") -> None:
+    def __init__(self, win, batch, eyeConnector:EyeConnector, name="") -> None:
         self.win = win
         self.batch = batch
         self.eyeConnector = eyeConnector
@@ -76,8 +76,11 @@ class TrialStage():
 
     def start(self):
         self.target = Target(x=self.win.width//2, y=self.win.height//2, outer_color=(200, 40, 40), batch=self.batch)
-        self.cursor_left = Target(x=self.win.width//2, y=self.win.height//2, outer_color=(40, 200, 40), batch=self.batch)
-        self.cursor_right = Target(x=self.win.width//2, y=self.win.height//2, outer_color=(40, 40, 200), batch=self.batch)
+
+        if (self.eyeConnector.eye == "left") or (self.eyeConnector.eye == "both"):
+            self.cursor_left = Target(x=self.win.width//2, y=self.win.height//2, outer_color=(40, 200, 40), batch=self.batch)
+        if (self.eyeConnector.eye == "right") or (self.eyeConnector.eye == "both"):
+            self.cursor_right = Target(x=self.win.width//2, y=self.win.height//2, outer_color=(40, 40, 200), batch=self.batch)
 
         # start recording
         self.eyeConnector.startRecording(msg="test trial start")
@@ -109,17 +112,17 @@ class TrialStage():
 
         # move cursor according to eye-gaze
         samples = self.eyeConnector.getEyeSample()
-        if (settings["eye"] == "both"):
+        if (self.eyeConnector.eye == "both"):
             left_sample, right_sample = self.eyeConnector.getEyeSample()
-        elif (settings["eye"] == "left"):
+        elif (self.eyeConnector.eye == "left"):
             left_sample = samples
-        elif (settings["eye"] == "right"):
+        elif (self.eyeConnector.eye == "right"):
             right_sample = samples
 
-        if (settings["eye"] == "left") or (settings["eye"] == "both"):
+        if (self.eyeConnector.eye == "left") or (self.eyeConnector.eye == "both"):
             self.cursor_left.set_x(left_sample.gaze[0])
             self.cursor_left.set_y(left_sample.gaze[1])
-        if (settings["eye"] == "right") or (settings["eye"] == "both"):
+        if (self.eyeConnector.eye == "right") or (self.eyeConnector.eye == "both"):
             self.cursor_right.set_x(right_sample.gaze[0])
             self.cursor_right.set_y(right_sample.gaze[1])
 
