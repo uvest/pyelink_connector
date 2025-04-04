@@ -14,6 +14,7 @@ class EyeConnector():
                  sample_rate:int=1000, clock:pygame.time.Clock|None=None) -> None:
         """Create connector object to communicate with an EyeLink 1000+.
         Args:
+            win (pygame.Surface): Surface to draw to during setup.
             host (str, optional): IP of the EyeLink Host PC. Defaults to "100.1.1.1".
             eye (str, optional): Choose which eye to track. Options: ["both", "right", "left"]. Defaults to "both".
             prefix (str, optional): Session prefix. Will be added to all files handled by this connection. 
@@ -25,11 +26,20 @@ class EyeConnector():
         self.win = win
         self.host = host
         self.eyelink = self.connect(host)
+        self.clock = clock if clock is not None else pygame.time.Clock()
 
         assert(eye.lower() in ["both", "right", "left"])
         self.eye = eye.lower()
-
-        self.clock = clock if clock is not None else pygame.time.Clock()
+        # set eye on host
+        self.eyelink.startSetup()
+        if self.eye == "both":
+            _eyeKey = B_KEY
+        elif self.eye == "right":
+            _eyeKey = R_KEY
+        elif self.eye == "left":
+            _eyeKey = L_KEY
+        self.eyelink.sendKeybutton(_eyeKey, 0, pylink.KB_PRESS)
+        self.eyelink.sendKeybutton(_eyeKey, 0, pylink.KB_RELEASE)
 
         # Flags and behavioural atributes
         self.c_status = 1000 # calibration status. success = 0

@@ -16,6 +16,9 @@ BACKSPACE_KEY = ord('\b')
 C_KEY = ord('c')
 V_KEY = ord('v')
 D_KEY = ord('d')
+B_KEY = ord('b')
+L_KEY = ord('l')
+R_KEY = ord('r')
 
 # STATUS CODES
 STATUS_MSGS = {
