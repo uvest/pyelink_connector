@@ -130,8 +130,10 @@ class TrialStage():
     def end(self):
         pyglet.clock.unschedule(self.run)
         del(self.target)
-        del(self.cursor_left)
-        del(self.cursor_right)
+        if (self.eyeConnector.eye == "left") or (self.eyeConnector.eye == "both"):
+            del(self.cursor_left)
+        if (self.eyeConnector.eye == "right") or (self.eyeConnector.eye == "both"):
+            del(self.cursor_right)
 
         # stop recording
         self.eyeConnector.stopRecording()
