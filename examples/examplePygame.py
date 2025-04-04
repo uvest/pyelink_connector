@@ -163,7 +163,6 @@ class TrialStage(Stage):
 
         # move cursor according to eye-gaze
         samples = self.eyeConnector.getEyeSample()
-        
         if (settings["eye"] == "both"):
             left_sample, right_sample = self.eyeConnector.getEyeSample()
         elif (settings["eye"] == "left"):

@@ -108,11 +108,20 @@ class TrialStage():
         self.target.set_y(self.target.y + vy * dt)
 
         # move cursor according to eye-gaze
-        left_sample, right_sample = self.eyeConnector.getEyeSample()
-        self.cursor_left.set_x(left_sample.gaze[0])
-        self.cursor_left.set_y(left_sample.gaze[1])
-        self.cursor_right.set_x(right_sample.gaze[0])
-        self.cursor_right.set_y(right_sample.gaze[1])
+        samples = self.eyeConnector.getEyeSample()
+        if (settings["eye"] == "both"):
+            left_sample, right_sample = self.eyeConnector.getEyeSample()
+        elif (settings["eye"] == "left"):
+            left_sample = samples
+        elif (settings["eye"] == "right"):
+            right_sample = samples
+
+        if (settings["eye"] == "left") or (settings["eye"] == "both"):
+            self.cursor_left.set_x(left_sample.gaze[0])
+            self.cursor_left.set_y(left_sample.gaze[1])
+        if (settings["eye"] == "right") or (settings["eye"] == "both"):
+            self.cursor_right.set_x(right_sample.gaze[0])
+            self.cursor_right.set_y(right_sample.gaze[1])
 
 
     def end(self):
@@ -173,6 +182,7 @@ class Handler():
 ### ENTRY POINT
 if __name__ == "__main__":
     settings = {
+        "eye": "both",
         "render_fps": 60,
         "resolution": None, # (width, height)
         "resolution_scaling": 1.5, # scaling as found in the display settings (windows)
@@ -202,7 +212,7 @@ if __name__ == "__main__":
     win.push_handlers(on_draw=on_draw)
 
     # EyeLink Connector
-    eyeConnector = EyeConnector(win, prefix="TEST")
+    eyeConnector = EyeConnector(win, prefix="TEST", eye=settings["eye"])
 
 
     handler = Handler(win, batch, eyeConnector)
