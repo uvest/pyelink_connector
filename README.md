@@ -10,7 +10,6 @@ So, here we go: An EyeLink Connector Class developed for and tested on the EyeLi
 ---
 Current limitations
 * Currently `pyglet` and `pygame` are supported. Support for `psychopy` is coming soon.
-* Currently only binoccular mode is supported. Support for tracking only one eye is coming soon.
 ---
 
 ## Installation
