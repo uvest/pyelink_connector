@@ -131,16 +131,20 @@ class TrialStage(Stage):
         self.v_angle = np.deg2rad(20)
 
         self.target = Target(x=self._displayCenter[0], y=self._displayCenter[1], outer_color=(200, 40, 40))
-        self.cursor_left = Target(x=self._displayCenter[0], y=self._displayCenter[1], outer_color=(40, 200, 40))
-        self.cursor_right = Target(x=self._displayCenter[0], y=self._displayCenter[1], outer_color=(40, 40, 200))
+        if (settings["eye"] == "left") or (settings["eye"] == "both"):
+            self.cursor_left = Target(x=self._displayCenter[0], y=self._displayCenter[1], outer_color=(40, 200, 40))
+        if (settings["eye"] == "right") or (settings["eye"] == "both"):
+            self.cursor_right = Target(x=self._displayCenter[0], y=self._displayCenter[1], outer_color=(40, 40, 200))
 
     def render(self, canvas):
         # draw background
         super().render(canvas)
         # draw objects
         self.target.render(canvas)
-        self.cursor_left.render(canvas)
-        self.cursor_right.render(canvas)
+        if (settings["eye"] == "left") or (settings["eye"] == "both"):
+            self.cursor_left.render(canvas)
+        if (settings["eye"] == "right") or (settings["eye"] == "both"):
+            self.cursor_right.render(canvas)
 
     def update(self, dt):
         # random move on target
@@ -158,11 +162,21 @@ class TrialStage(Stage):
         self.target.set_y(self.target.y + vy * dt)
 
         # move cursor according to eye-gaze
-        left_sample, right_sample = self.eyeConnector.getEyeSample()
-        self.cursor_left.set_x(left_sample.gaze[0])
-        self.cursor_left.set_y(left_sample.gaze[1])
-        self.cursor_right.set_x(right_sample.gaze[0])
-        self.cursor_right.set_y(right_sample.gaze[1])
+        samples = self.eyeConnector.getEyeSample()
+        
+        if (settings["eye"] == "both"):
+            left_sample, right_sample = self.eyeConnector.getEyeSample()
+        elif (settings["eye"] == "left"):
+            left_sample = samples
+        elif (settings["eye"] == "right"):
+            right_sample = samples
+
+        if (settings["eye"] == "left") or (settings["eye"] == "both"):
+            self.cursor_left.set_x(left_sample.gaze[0])
+            self.cursor_left.set_y(left_sample.gaze[1])
+        if (settings["eye"] == "right") or (settings["eye"] == "both"):
+            self.cursor_right.set_x(right_sample.gaze[0])
+            self.cursor_right.set_y(right_sample.gaze[1])
 
     def run(self):
         # start recording
@@ -209,7 +223,7 @@ def main(settings:dict):
     surface = pygame.display.set_mode(depth=0, display=settings["display"], vsync=1, flags=pygame.FULLSCREEN)
     pygame.mouse.set_visible(False)
     clock = pygame.time.Clock()
-    eyeConnector = EyeConnector(win=surface, prefix="TEST")
+    eyeConnector = EyeConnector(win=surface, prefix="TEST", eye=settings["eye"])
 
     # open file on host
     eyeConnector.openFile(file_name="pga")
@@ -243,6 +257,7 @@ def main(settings:dict):
 
 if __name__ == "__main__":
     settings = {
+        "eye": "both",
         "display": 0,
         "render_fps": 60,
         "font_name": "Times new Roman",
