@@ -37,7 +37,7 @@ def main(settings:dict):
     # Setup/ Calibration
     eyeConnector.runSetup()
 
-    # Test/ Trial
+    # Test/ Trial Start information
     msg_header = visual.TextStim(win, pos=[0, +150], text="Setup complete")
     msg_footer = visual.TextStim(win, pos=[0, -50], text="Start Test Trial [SPACE]")
     msg_header.draw()
@@ -46,6 +46,10 @@ def main(settings:dict):
     win.flip()
     kb.clearEvents()
     event.waitKeys(keyList=["space"])
+
+    # Run Test Trial
+    # start recording
+    eyeConnector.startRecording(msg="test trial start")
 
     done = False
     cursor_eye_left = Target(win=win, outer_color=(0, 1, 0))
@@ -61,6 +65,9 @@ def main(settings:dict):
     while not done:
         for key in kb.getKeys():
             if key == 'escape':
+                # stop recording
+                eyeConnector.stopRecording()
+                # close connection
                 eyeConnector.close()
                 core.quit()
             elif key == 'space':
@@ -99,18 +106,26 @@ def main(settings:dict):
 
         # update screen
         win.flip()
+
+    # stop recording
+    eyeConnector.stopRecording()
+    # download edf file
+    eyeConnector.downloadFile()
+    # close connection
+    eyeConnector.close()
     
+    # Show Test End Screen
     msg_header = visual.TextStim(win, pos=[0, +150], text="Test Done")
+    msg_body = visual.TextStim(win, pos=[0,0], text=f"Downloaded file from EyeLink to {eyeConnector.download_directory}")
     msg_footer = visual.TextStim(win, pos=[0, -50], text="End [SPACE]")
     msg_header.draw()
+    msg_body.draw()
     msg_footer.draw()
 
     win.flip()
     event.waitKeys(keyList=["space"])
 
-    eyeConnector.close()
-
-    print("by")
+    print("byby")
 
 if __name__ == "__main__":
     settings = {
