@@ -621,13 +621,10 @@ class EyeConnector():
 
 
     ### DRIFT CORRECTION
-    def driftCorrect(self, settings:dict) -> str:
+    def driftCorrect(self) -> str:
         """Possible entry point. Requires an opened edf file on the host PC.
         Perform drift correction. 
         ATTENTION: Make sure that "Apply correction" is active on the drift correction screen on the EyeLink Host PC.
-
-        Args:
-            settings (dict): required keys: render_fps
 
         Returns:
             str: drift correction result

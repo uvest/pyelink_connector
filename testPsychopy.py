@@ -3,7 +3,7 @@ from psychopy.hardware import keyboard
 from psychopy.visual import Window
 
 
-# from src.pyelink_connector.psychopy.connector import EyeConnector
+from src.pyelink_connector.psychopy.connector import EyeConnector
 from src.pyelink_connector.psychopy.utils import Target, MultiLineText
 from src.pyelink_connector.utils import *
 
@@ -12,9 +12,9 @@ def main(settings:dict):
     win = Window(settings["resolution"], screen=settings["display"], fullscr=True, monitor=None, units="pix")
     kb = keyboard.Keyboard()
 
-    # eyeConnector = EyeConnector(win=win, prefix="TEST", eye=settings["eye"])
+    eyeConnector = EyeConnector(win=win, prefix="TEST", eye=settings["eye"])
     # open file on host
-    # eyeConnector.openFile(file_name="psp")
+    eyeConnector.openFile(file_name="psp")
 
     width, height = win.size
     
@@ -35,7 +35,7 @@ def main(settings:dict):
     event.waitKeys(keyList=["space"])
 
     # Setup/ Calibration
-    # eyeConnector.runSetup()
+    eyeConnector.runSetup()
 
     # Test/ Trial
     msg_header = visual.TextStim(win, pos=[0, +150], text="Setup complete")
@@ -60,9 +60,8 @@ def main(settings:dict):
     
     while not done:
         for key in kb.getKeys():
-            print(f"key: {key}")
             if key == 'escape':
-                # eyeConnector.close()
+                eyeConnector.close()
                 core.quit()
             elif key == 'space':
                 done = True
@@ -79,19 +78,19 @@ def main(settings:dict):
             y_dir = 1
         target.set_pos((target.x + x_dir * speed, target.y + y_dir * speed))
 
-        # # move cursor according to eye-gaze
-        # samples = eyeConnector.getEyeSample()
-        # if (settings["eye"] == "both"):
-        #     left_sample, right_sample = eyeConnector.getEyeSample()
-        # elif (settings["eye"] == "left"):
-        #     left_sample = samples
-        # elif (settings["eye"] == "right"):
-        #     right_sample = samples
+        # move cursor according to eye-gaze
+        samples = eyeConnector.getEyeSample()
+        if (settings["eye"] == "both"):
+            left_sample, right_sample = eyeConnector.getEyeSample()
+        elif (settings["eye"] == "left"):
+            left_sample = samples
+        elif (settings["eye"] == "right"):
+            right_sample = samples
 
-        # if (settings["eye"] == "left") or (settings["eye"] == "both"):
-        #     cursor_eye_left.set_pos(left_sample.gaze)
-        # if (settings["eye"] == "right") or (settings["eye"] == "both"):
-        #     cursor_eye_right.set_pos(right_sample.gaze)
+        if (settings["eye"] == "left") or (settings["eye"] == "both"):
+            cursor_eye_left.set_pos(left_sample.gaze)
+        if (settings["eye"] == "right") or (settings["eye"] == "both"):
+            cursor_eye_right.set_pos(right_sample.gaze)
 
         # render
         target.render()
@@ -109,7 +108,7 @@ def main(settings:dict):
     win.flip()
     event.waitKeys(keyList=["space"])
 
-    # eyeConnector.close()
+    eyeConnector.close()
 
     print("by")
 
