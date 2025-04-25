@@ -4,28 +4,27 @@ from psychopy.visual import Window
 
 
 from src.pyelink_connector.psychopy.connector import EyeConnector
-from src.pyelink_connector.psychopy.utils import Target
+from src.pyelink_connector.psychopy.utils import Target, MultiLineText
 from src.pyelink_connector.utils import *
 
 
 def main(settings:dict):
     win = Window(settings["resolution"], screen=settings["display"], fullscr=True, monitor=None, units="pix")
     kb = keyboard.Keyboard()
-    clock = core.Clock()
 
     eyeConnector = EyeConnector(win=win, prefix="TEST", eye=settings["eye"])
     # open file on host
     eyeConnector.openFile(file_name="psp")
 
     width, height = win.size
-    print(f"win.size: {win.size}")
     
     # hide mouse
     win.setMouseVisible(False)
 
     # Welcome
     msg_header = visual.TextStim(win, pos=[0, +150], text="Psychopy Pylink EyeLink Connector")
-    msg_body = visual.TextStim(win, pos=[0, +50], text="1. Setup by calibrating (and optionally validating)\n2. Testing communication with simple tracking task.")
+    msg_body = MultiLineText(win, pos=[0, 50], text="1. Setup by calibrating (and optionally validating)\n\
+                                                     2. Testing communication with simple tracking task.")
     msg_footer = visual.TextStim(win, pos=[0, -50], text="Start setup [SPACE]")
     msg_header.draw()
     msg_body.draw()
@@ -49,9 +48,9 @@ def main(settings:dict):
     event.waitKeys(keyList=["space"])
 
     done = False
-    cursor_eye_left = Target(win=win, color=(0, 1, 0))
-    cursor_eye_right = Target(win=win, color=(0, 0, 1))
-    target = Target(win=win, color=(0, 1, 0))
+    cursor_eye_left = Target(win=win, outer_color=(0, 1, 0))
+    cursor_eye_right = Target(win=win, outer_color=(0, 0, 1))
+    target = Target(win=win, outer_color=(1, 0, 0))
     kb.clearEvents()
 
     # variable for target movement
@@ -89,12 +88,8 @@ def main(settings:dict):
 
         if (settings["eye"] == "left") or (settings["eye"] == "both"):
             cursor_eye_left.set_pos(left_sample.gaze)
-            # cursor_eye_left.set_x(left_sample.gaze[0])
-            # cursor_eye_left.set_y(left_sample.gaze[1])
         if (settings["eye"] == "right") or (settings["eye"] == "both"):
             cursor_eye_right.set_pos(right_sample.gaze)
-            # cursor_eye_right.set_x(right_sample.gaze[0])
-            # cursor_eye_right.set_y(right_sample.gaze[1])
 
         # render
         target.render()
@@ -117,13 +112,8 @@ def main(settings:dict):
 if __name__ == "__main__":
     settings = {
         "eye": "both",
-        "display": 0,
         "resolution": [2048, 1152],
-        "render_fps": 60,
-        # "font_name": "Times new Roman",
-        # "font_size": 22,
-        # "font_color": BLACK,
-        # "bg_color": GREY,
+        "display": 0,
         }
     
     main(settings=settings)

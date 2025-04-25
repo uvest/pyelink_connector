@@ -1,8 +1,5 @@
 import pylink
-from psychopy import visual, core, event
-from psychopy.hardware import keyboard
-from psychopy.visual import Window
-
+import pygame
 import datetime
 import os
 
@@ -13,8 +10,8 @@ from ..utils import *
 
 
 class EyeConnector():
-    def __init__(self, win:Window, host:str="100.1.1.1", eye:str="both", prefix:str="", download_directory:str="./eye_tracking/",
-                 sample_rate:int=1000) -> None:
+    def __init__(self, win:pygame.Surface, host:str="100.1.1.1", eye:str="both", prefix:str="", download_directory:str="./eye_tracking/",
+                 sample_rate:int=1000, clock:pygame.time.Clock|None=None) -> None:
         """Create connector object to communicate with an EyeLink 1000+.
         Args:
             win (pygame.Surface): Surface to draw to during setup.
@@ -24,11 +21,12 @@ class EyeConnector():
                                     Could, e.g., combine experiment and participant ID. Defaults to "".
             download_directory (str, optional): Local directory to store downloaded EDF files to. Defaults to "./eye_tracking/".
             sample_rate (int, optional): Sampling rate. Should not exceed 1000 for tracking both eyes. Defaults to 1000.
+            clock (pygame.time.Clock|None, optional): A pygame clock for keeping the framerate. Defaults to None.
         """
         self.win = win
-        self.kb = keyboard.Keyboard()
         self.host = host
         self.eyelink = self.connect(host)
+        self.clock = clock if clock is not None else pygame.time.Clock()
 
         assert(eye.lower() in ["both", "right", "left"])
         self.eye = eye.lower()
@@ -64,11 +62,13 @@ class EyeConnector():
         os.makedirs(self.download_directory, exist_ok=True)
 
         # assume the whole monitor is used. Get resolution from system.
-        self._w, self._h = win.size
+        _dispInfo = pygame.display.Info()
+        self._w = _dispInfo.current_w
+        self._h = _dispInfo.current_h
 
         # displayable objects
         self.bg_color = GREY
-        self.target = Target()
+        self.target = Target(x=self._w//2, y=self._h//2)
         
         # for handling communication to EyeLink
         self.dummy_sample = Sample((self._w, self._h), (self._w, self._h), (self._w, self._h), 0.)
@@ -124,9 +124,9 @@ class EyeConnector():
         # set header information
         self.eyelink.sendCommand(f"add_file_preamble_text 'RECORDED BY Pylink-Pygame Connector tagged {self.prefix}'")
 
-        # define coordinate system [LEFT, TOP, RIGHT, BOTTOM]
-        self.eyelink.sendMessage(f"DISPLAY_COORDS {-self._w/2} {self._h/2} {self._w/2} {-self._h/2}") # DISPLAY_COORDS msg is used by the DATA VIEWER
-        self.eyelink.sendCommand(f"screen_pixel_coords = {-self._w/2} {self._h/2} {self._w/2} {-self._h/2}") # This should be used for defining calibration targets... 
+        # define coordinate system
+        self.eyelink.sendMessage(f"DISPLAY_COORDS 0 0 {self._w - 1} {self._h - 1}") # DISPLAY_COORDS msg is used by the DATA VIEWER
+        self.eyelink.sendCommand(f"screen_pixel_coords = 0 0 {self._w - 1} {self._h - 1}") # This should be used for defining calibration targets... 
 
         # track all eye events in the file
         _eye_identifier = ''
@@ -242,9 +242,12 @@ class EyeConnector():
 
     ####################### PYGAME specific
     ### GENERAL SETUP ENTRY
-    def runSetup(self) -> None:
+    def runSetup(self, settings:dict) -> None:
         """Possible entry point. Requires an opened edf file on the host PC.
         Show the steup screen from which calibration, validation and drift-correction can be started.
+
+        Args:
+            settings (dict): required keys: render_fps
         """
         assert(self.isFileOpen)
 
@@ -252,10 +255,10 @@ class EyeConnector():
         self.eyelink.startSetup()
 
         # hide mouse if shown
-        _mousWasVisible = self.win.mouseVisible
-        self.win.setMouseVisible(False)
+        _mousWasVisible = pygame.mouse.get_visible()
+        pygame.mouse.set_visible(False)
 
-        # show calibration info screen
+        # start loop
         done = False
         text = f"STATUS:\
             \n\nCalibration: {STATUS_MSGS[self.c_status]}\
@@ -265,74 +268,80 @@ class EyeConnector():
             \n\tPress D to drift correct.\
             \n\tPress Q/ENTER to quit setup and continue.\
             \n\nUse SPACE to manually accept a fixation."
-        mlText = MultiLineText(text)
-
+        mlText = MultiLineText(text, screen_size=(self._w, self._h), placement="center", settings=settings)
         while not done:
             # handle events
-            keys = self.kb.getKeys()
-            for key in keys:
-                if key == 'c':
-                    msg = self.calibrate()
-                    # Update the status text
-                    text = f"STATUS:\
-                        \n\t>{msg}\
-                        \n\nCalibration: {STATUS_MSGS[self.c_status]}\
-                        \nValidation: {STATUS_MSGS[self.v_status]}{f' - avg. error: {self.v_error} °' if self.v_error is not None else ''}\
-                        \n\n\tPress C to {'(re)' if self.c_status != 1000 else ''}calibrate.\
-                        \n\tPress V to {'(re)' if self.v_status != 1000 else ''}validate.\
-                        \n\tPress D to drift correct.\
-                        \n\tPress Q/ENTER to quit setup and continue.\
-                        \n\nUse SPACE to manually accept a fixation."
-                    mlText = MultiLineText(text)
-                elif key == 'v':
-                    msg = self.validate()
-                    # Update the status text
-                    text = f"STATUS:\
-                        \n\t>{msg}\
-                        \n\nCalibration: {STATUS_MSGS[self.c_status]}\
-                        \nValidation: {STATUS_MSGS[self.v_status]}{f' - avg. error: {self.v_error} °' if self.v_error is not None else ''}\
-                        \n\n\tPress C to {'(re)' if self.c_status != 1000 else ''}calibrate.\
-                        \n\tPress V to {'(re)' if self.v_status != 1000 else ''}validate.\
-                        \n\tPress D to drift correct.\
-                        \n\tPress Q/ENTER to quit setup and continue.\
-                        \n\nUse SPACE to manually accept a fixation."
-                    mlText = MultiLineText(text)
-                elif key == 'd':
-                    msg = self.driftCorrect()
-                    # Update the status text
-                    text = f"STATUS:\
-                        \n\t>{msg}\
-                        \n\nCalibration: {STATUS_MSGS[self.c_status]}\
-                        \nValidation: {STATUS_MSGS[self.v_status]}{f' - avg. error: {self.v_error} °' if self.v_error is not None else ''}\
-                        \n\n\tPress C to {'(re)' if self.c_status != 1000 else ''}calibrate.\
-                        \n\tPress V to {'(re)' if self.v_status != 1000 else ''}validate.\
-                        \n\tPress D to drift correct.\
-                        \n\tPress Q/ENTER to quit setup and continue.\
-                        \n\nUse SPACE to manually accept a fixation."
-                    mlText = MultiLineText(text)
-                elif key == 'q' or key == "enter":
-                    done = True
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_c:
+                        msg = self.calibrate(settings)
+                        # Update the status text
+                        text = f"STATUS:\
+                            \n\t>{msg}\
+                            \n\nCalibration: {STATUS_MSGS[self.c_status]}\
+                            \nValidation: {STATUS_MSGS[self.v_status]}{f' - avg. error: {self.v_error} °' if self.v_error is not None else ''}\
+                            \n\n\tPress C to {'(re)' if self.c_status != 1000 else ''}calibrate.\
+                            \n\tPress V to {'(re)' if self.v_status != 1000 else ''}validate.\
+                            \n\tPress D to drift correct.\
+                            \n\tPress Q/ENTER to quit setup and continue.\
+                            \n\nUse SPACE to manually accept a fixation."
+                        mlText = MultiLineText(text, screen_size=(self._w, self._h), placement="center", settings=settings)
+
+                    if event.key == pygame.K_v:
+                        msg = self.validate(settings)
+                        # Update the status text
+                        text = f"STATUS:\
+                            \n\t>{msg}\
+                            \n\nCalibration: {STATUS_MSGS[self.c_status]}\
+                            \nValidation: {STATUS_MSGS[self.v_status]}{f' - avg. error: {self.v_error} °' if self.v_error is not None else ''}\
+                            \n\n\tPress C to {'(re)' if self.c_status != 1000 else ''}calibrate.\
+                            \n\tPress V to {'(re)' if self.v_status != 1000 else ''}validate.\
+                            \n\tPress D to drift correct.\
+                            \n\tPress Q/ENTER to quit setup and continue.\
+                            \n\nUse SPACE to manually accept a fixation."
+                        mlText = MultiLineText(text, screen_size=(self._w, self._h), placement="center", settings=settings)
+
+                    if event.key == pygame.K_d:
+                        msg = self.driftCorrect(settings)
+                        # Update the status text
+                        text = f"STATUS:\
+                            \n\t>{msg}\
+                            \n\nCalibration: {STATUS_MSGS[self.c_status]}\
+                            \nValidation: {STATUS_MSGS[self.v_status]}{f' - avg. error: {self.v_error} °' if self.v_error is not None else ''}\
+                            \n\n\tPress C to {'(re)' if self.c_status != 1000 else ''}calibrate.\
+                            \n\tPress V to {'(re)' if self.v_status != 1000 else ''}validate.\
+                            \n\tPress D to drift correct.\
+                            \n\tPress Q/ENTER to quit setup and continue.\
+                            \n\nUse SPACE to manually accept a fixation."
+                        mlText = MultiLineText(text, screen_size=(self._w, self._h), placement="center", settings=settings)
+
+                    if event.key == pygame.K_q or event.key == pygame.K_RETURN:
+                        done = True
 
             # render text
-            mlText.render()
+            self.win.fill(self.bg_color)
+            mlText.render(self.win)
 
-            # update window
-            self.win.flip()
-            self.kb.clearEvents()
-
-
+            # update
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(settings["render_fps"])
+            
         self.eyelink.setOfflineMode()
 
         # show mouse if it was shown
-        self.win.setMouseVisible(_mousWasVisible)
+        pygame.mouse.set_visible(_mousWasVisible)
 
         return
             
     ### CALIBRATION 
-    def calibrate(self) -> None:
+    def calibrate(self, settings:dict) -> None:
         """Possible entry point. Requires an opened edf file on the host PC.
         Performs the calibration. Shows a status screen when done.
         Upon exiting the status screen, a status message is returned.
+
+        Args:
+            settings (dict): required keys: render_fps
         """
         assert(self.isFileOpen)
 
@@ -340,8 +349,8 @@ class EyeConnector():
         self.eyelink.startSetup()
 
         # hide mouse if shown
-        _mousWasVisible = self.win.mouseVisible
-        self.win.setMouseVisible(False)
+        _mousWasVisible = pygame.mouse.get_visible()
+        pygame.mouse.set_visible(False)
 
         # configure calibration
         self.eyelink.setCalibrationType("HV9")
@@ -358,22 +367,23 @@ class EyeConnector():
         done = False
         while not done:
             # handle events
-            keys = self.kb.getKeys()
-            for key in keys:
-                if key == 'space':
-                    # (manually) accept target fixation
-                    self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_RELEASE)
-                if key == 'backspace':
-                    # repeat previous target
-                    self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_RELEASE)
-                elif key == 'q' or key == "esc":
-                    self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
-                    self.c_status = 27
-                    msg = "Calibration was aborted."
-                    done = True
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        # (manually) accept target fixation
+                        self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_RELEASE)
+                    if event.key == pygame.K_BACKSPACE:
+                        # repeat previous target
+                        self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_RELEASE)
+
+                    if event.key == pygame.K_q or event.key == pygame.K_ESCAPE:
+                        self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
+                        self.c_status = 27
+                        msg = "Calibration was aborted."
+                        done = True
 
             # get calibration target position
             p = self.eyelink.getTargetPositionAndState()
@@ -392,23 +402,26 @@ class EyeConnector():
                 done = True
 
             # render target
-            self.target.render()
+            self.win.fill(self.bg_color)
+            self.target.render(self.win)
 
             # update
-            self.win.flip()
-            self.kb.clearEvents()
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(settings["render_fps"])
 
-        # show mouse if it was shown
-        self.win.setMouseVisible(_mousWasVisible)
+        # show mouse if it was visible
+        pygame.mouse.set_visible(_mousWasVisible)
 
-        self._showCalibrationDoneScreen(msg=f"Calibration status: {STATUS_MSGS[self.c_status]}. Result: {msg}")
+        self._showCalibrationDoneScreen(settings, msg=f"Calibration status: {STATUS_MSGS[self.c_status]}. Result: {msg}")
 
-    def _showCalibrationDoneScreen(self, msg:str="") -> str:
+    def _showCalibrationDoneScreen(self, settings:dict, msg:str="") -> str:
         """Shows calibration results. Should not be called directly.
             May call calibrate (again) or validate from here.
             Upon exit, a status message is returend
 
         Args:
+            settings (dict): required keys: render_fps
             msg (str, optional): Message to display. Defaults to "".
 
         Returns:
@@ -420,67 +433,75 @@ class EyeConnector():
             \nPress C to calibrate again.\
             \nPress V to validate.\
             \nPress BACKSPACE/ DELETE to discard the calibration and return."
-        mlText = MultiLineText(text=text)
+        mlText = MultiLineText(text=text, screen_size=(self._w, self._h), placement="center", settings=settings)
 
         # hide mouse if shown
-        _mousWasVisible = self.win.mouseVisible
-        self.win.setMouseVisible(False)
+        _mousWasVisible = pygame.mouse.get_visible()
+        pygame.mouse.set_visible(False)
 
         callback = None
         msg = ""
         done = False
         while not done:
             # handle events
-            keys = self.kb.getKeys()
-            for key in keys:
-                if key == 'enter':
-                    # accept calibration.
-                    self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_RELEASE)
-                    callback = None
-                    msg = "Calibration accepted."
-                    done = True
-                if key == 'c':
-                    # restart calibration on tracker
-                    self.eyelink.sendKeybutton(DELETE_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(DELETE_KEY, 0, pylink.KB_RELEASE)
-                    callback = self.calibrate
-                    done = True
-                if key == 'v':
-                    callback = self.validate
-                    done = True
-                if key == 'backspace' or key == 'del':
-                    # Discard calibration without repeating
-                    self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
-                    self.c_status = 1000
-                    callback = None
-                    msg = "Calibration discarded."
-                    done = True
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        # accept calibration.
+                        self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_RELEASE)
+                        callback = None
+                        msg = "Calibration accepted."
+                        done = True
+
+                    if event.key == pygame.K_c:
+                        # restart calibration on tracker
+                        self.eyelink.sendKeybutton(DELETE_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(DELETE_KEY, 0, pylink.KB_RELEASE)
+                        callback = self.calibrate
+                        done = True
+
+                    if event.key == pygame.K_v:
+                        callback = self.validate
+                        done = True
+
+                    if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
+                        # Discard calibration without repeating
+                        self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
+                        self.c_status = 1000
+                        callback = None
+                        msg = "Calibration discarded."
+                        done = True
 
             # render text
-            mlText.render()
+            self.win.fill(self.bg_color)
+            mlText.render(self.win)
 
             # update
-            self.win.flip()
-            self.kb.clearEvents()
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(settings["render_fps"])
 
         # show mouse if it was visible
-        self.win.setMouseVisible(_mousWasVisible)
+        pygame.mouse.set_visible(_mousWasVisible)
 
         if callback is not None:
-            return callback()
+            return callback(settings)
         else:
             return msg
 
 
     ### VALIDATION
-    def validate(self) -> None:
+    def validate(self, settings:dict) -> None:
         """Possible entry point. Requires an opened edf file and successfull calibration on the host PC.
         Performs the validation. Shows a status screen when done.
         Should be called from the calibration-done-screen or the setup-screen.
         Calling from the experiment directly may cause problems.
         Upon exiting the status screen, a status message is returned.
+
+        Args:
+            settings (dict): required keys: render_fps
         """
         assert(self.isFileOpen)
 
@@ -490,31 +511,31 @@ class EyeConnector():
         self.eyelink.setAcceptTargetFixationButton(SPACE_KEY)
 
         # hide mouse if shown
-        _mousWasVisible = self.win.mouseVisible
-        self.win.setMouseVisible(False)
+        _mousWasVisible = pygame.mouse.get_visible()
+        pygame.mouse.set_visible(False)
 
         # DO validation
         msg = ""
         done = False
         while not done:
             # handle events
-            keys = self.kb.getKeys()
-            for key in keys:
-                if key == 'space':
-                    # (manually) accept target fixation
-                    self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_RELEASE)
-                if key == 'backspace':
-                    # repeat previous target
-                    self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_RELEASE)
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        # (manually) accept target fixation
+                        self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_RELEASE)
+                    if event.key == pygame.K_BACKSPACE:
+                        # repeat previous target
+                        self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_RELEASE)
 
-                if key == 'q' or key == 'esc':
-                    self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
-                    self.v_status = 27
-                    msg = "Validation was aborted."
-                    done = True
+                    if event.key == pygame.K_q or event.key == pygame.K_ESCAPE:
+                        self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
+                        self.v_status = 27
+                        msg = "Validation was aborted."
+                        done = True
 
             # get validation target position
             p = self.eyelink.getTargetPositionAndState()
@@ -533,22 +554,26 @@ class EyeConnector():
                 done = True
 
             # render target
-            self.target.render()
+            self.win.fill(self.bg_color)
+            self.target.render(self.win)
 
             # update
-            self.win.flip()
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(settings["render_fps"])
 
         # show mouse if it was visible
-        self.win.setMouseVisible(_mousWasVisible)
+        pygame.mouse.set_visible(_mousWasVisible)
 
-        self._showValidationDoneScreen(msg=f"Validation status: {STATUS_MSGS[self.v_status]}. Result: {msg}")
+        self._showValidationDoneScreen(settings, msg=f"Validation status: {STATUS_MSGS[self.v_status]}. Result: {msg}")
 
-    def _showValidationDoneScreen(self, msg:str="") -> str:
+    def _showValidationDoneScreen(self, settings:dict, msg:str="") -> str:
         """Shows validation results. Should not be called directly.
             May call validate again from here.
             Upon exit, a status message is returend
 
         Args:
+            settings (dict): required keys: render_fps
             msg (str, optional): Message to display. Defaults to "".
             
         Returns:
@@ -559,53 +584,57 @@ class EyeConnector():
             \nPress ENTER to accept the validation and continue.\
             \nPress V to validate again.\
             \nPress BACKSPACE/ DELETE to discard the validation."
-        mlText = MultiLineText(text=text)
+        mlText = MultiLineText(text=text, screen_size=(self._w, self._h), placement="center", settings=settings)
 
         # hide mouse if shown
-        _mousWasVisible = self.win.mouseVisible
-        self.win.setMouseVisible(False)
+        _mousWasVisible = pygame.mouse.get_visible()
+        pygame.mouse.set_visible(False)
 
         callback = None
         msg = None
         done = False
         while not done:
             # handle events
-            for key in self.kb.getKeys():
-                if key == 'enter':
-                    # accept validation.
-                    self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_RELEASE)
-                    callback = None
-                    msg = "Validation accepted."
-                    done = True
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        # accept validation.
+                        self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_RELEASE)
+                        callback = None
+                        msg = "Validation accepted."
+                        done = True
 
-                if key == 'v':
-                    # restart validation on tracker
-                    self.eyelink.sendKeybutton(DELETE_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(DELETE_KEY, 0, pylink.KB_RELEASE)
-                    callback = self.validate
-                    done = True
+                    if event.key == pygame.K_v:
+                        # restart validation on tracker
+                        self.eyelink.sendKeybutton(DELETE_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(DELETE_KEY, 0, pylink.KB_RELEASE)
+                        callback = self.validate
+                        done = True
 
-                if key == 'backspace' or key == 'del':
-                    # Discard validation without repeating
-                    self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
-                    self.v_status = 1000
-                    callback = None
-                    msg = "Validation discarded."
-                    done = True
+                    if event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
+                        # Discard validation without repeating
+                        self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
+                        self.v_status = 1000
+                        callback = None
+                        msg = "Validation discarded."
+                        done = True
 
             # render text
-            mlText.render()
+            self.win.fill(self.bg_color)
+            mlText.render(self.win)
 
             # update
-            self.win.flip()
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(settings["render_fps"])
 
         # show mouse if it was visible
-        self.win.setMouseVisible(_mousWasVisible)
+        pygame.mouse.set_visible(_mousWasVisible)
 
         if callback is not None:
-            return callback()
+            return callback(settings)
         else:
             return msg
 
@@ -622,32 +651,34 @@ class EyeConnector():
         Returns:
             str: drift correction result
         """
-        # position target and make visible
-        self.target.set_pos([0,0])
+        # position target
+        self.target.set_x(self._w/2)
+        self.target.set_y(self._h/2)
         self.target.show()
 
         # hide mouse if shown
-        _mousWasVisible = self.win.mouseVisible
-        self.win.setMouseVisible(False)
+        _mousWasVisible = pygame.mouse.get_visible()
+        pygame.mouse.set_visible(False)
 
-        self.eyelink.startDriftCorrect(self._w, self._h)
+        self.eyelink.startDriftCorrect(self.win.width//2, self.win.height//2)
         # make sure "Apply correction" is active
         # ... TODO
 
         done = False
         while not done:
             # handle events
-            for key in self.kb.getKeys():
-                if key == 'space':
-                    self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_RELEASE)
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_RELEASE)
 
-                if key == 'q' or key == 'esc':
-                    # leave drift correct mode on tracker
-                    self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
-                    self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
-                    self.d_status = 27
-                    done = True
+                    if (event.key == pygame.K_q) or (event.key == pygame.K_ESCAPE):
+                        # leave drift correct mode on tracker
+                        self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
+                        self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
+                        self.d_status = 27
+                        done = True
 
             # get drift correct status
             d = self.eyelink.getCalibrationResult()
@@ -664,12 +695,15 @@ class EyeConnector():
                 done = True
 
             # render target
-            self.target.render()
+            self.win.fill(self.bg_color)
+            self.target.render(self.win)
 
             # update
-            self.win.flip()
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(settings["render_fps"])
 
         # show mouse if it was visible
-        self.win.setMouseVisible(_mousWasVisible)
+        pygame.mouse.set_visible(_mousWasVisible)
 
         return f"Drift correction: {STATUS_MSGS[self.d_status]}"

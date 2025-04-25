@@ -1,5 +1,5 @@
 import psychopy
-from psychopy.visual import GratingStim, Circle
+from psychopy.visual import Circle, TextStim, Window
 from ..utils import *
 
 # Need to overwrite colors for psychopy
@@ -8,14 +8,9 @@ WHITE = (1, 1, 1)
 GREY = (0, 0, 0)
 
 class Target():
-    def __init__(self, win, color=None):
-        # self.inner = GratingStim(win, color=-1, colorSpace="rgb", tex=None, mask="circle", size=10)
-        # self.outer = GratingStim(win, color=1, colorSpace="rgb", tex=None, mask="circle", size=20)
-        self.inner = Circle(win, radius=5, fillColor=BLACK, fillColorSpace="rgb")
-
-        if color is None:
-            color = WHITE
-        self.outer = Circle(win, radius=10, fillColor=color, fillColorSpace="rgb")
+    def __init__(self, win:Window, x=0, y=0, outer_color=WHITE, inner_color=BLACK):
+        self.inner = Circle(win, pos=[x, y], radius=5, fillColor=inner_color, fillColorSpace="rgb")
+        self.outer = Circle(win, pos=[x, y], radius=10, fillColor=outer_color, fillColorSpace="rgb")
 
         self.hidden = False
 
@@ -56,64 +51,19 @@ class Target():
     def update(self, dt):
         pass
     
+class MultiLineText(TextStim):
+    def __init__(self, win, text="Hello World", pos=(0.0, 0.0),
+                 font="", depth=0, rgb=None, color=(1.0, 1.0, 1.0), colorSpace='rgb', opacity=1.0,
+                 contrast=1.0, units="", ori=0.0, height=None, antialias=True, bold=False, italic=False, alignHoriz=None,
+                 alignVert=None, alignText='center', anchorHoriz='center', anchorVert='center', fontFiles=(), wrapWidth=None,
+                 flipHoriz=False, flipVert=False, languageStyle='LTR', draggable=False, name=None, autoLog=None, autoDraw=False):
+        # strip unnecessary whitespace around newlines
+        lines =[l.strip() for l in text.split("\n")]
+        text = "\n".join(lines)
 
-# class MultiLineText():
-#     def __init__(self, text:str, 
-#                  pos:tuple|None=(0,0), screen_size:tuple|None=None, placement:str="center",
-#                  settings:dict={}):
-#         # default values
-#         _defaultFontName = "Times New Roman"
-#         _defaultFontSize = 22
-#         _defaultFontColor = BLACK
-
-#         try:
-#             fn = settings["font_name"]
-#         except KeyError:
-#             fn = _defaultFontName
-#         try:
-#             fs = settings["font_size"]
-#         except KeyError:
-#             fs = _defaultFontSize
-#         try:
-#             fc = settings["font_color"]
-#         except:
-#             fc = _defaultFontColor
-
-#         # calculate postion
-#         if ((pos is None) and (screen_size is None)):
-#             raise AssertionError("Either pos or screen_size must be set.")
+        super().__init__(win, text, font, pos, depth, rgb, color, colorSpace, opacity, contrast, units,
+                         ori, height, antialias, bold, italic, alignHoriz, alignVert, alignText, anchorHoriz, anchorVert, 
+                         fontFiles, wrapWidth, flipHoriz, flipVert, languageStyle, draggable, name, autoLog, autoDraw)
         
-#         self.font = pygame.font.SysFont(fn, size=fs)
-#         self.images = []
-#         self.rects = []
-#         for i, line in enumerate(text.split("\n")):
-#             lineImage = self.font.render(line.strip(), antialias=True, color=fc)
-#             self.images.append(lineImage)
-
-#         # If screen_size is set, overwrite pos parameter according to placement
-#         if screen_size is not None:
-#             _max_img_width = max([x.get_width() for x in self.images])
-
-#             # Horizontal position
-#             if placement.lower() in ["center", "centre"]:
-#                 _pos0 = screen_size[0] / 2 - _max_img_width / 2
-#             elif placement.lower() == "left":
-#                 _pos0 = 0.
-#             elif placement.lower() == "right":
-#                 _pos0 = screen_size[0] - _max_img_width
-
-#             # Always center vertically
-#             _pos1 = screen_size[1] / 2 - ((len(self.images)/2) * self.font.get_height() * 1.1)
-
-#             pos = (_pos0, _pos1)
-
-#         for i, img in enumerate(self.images):
-#             imgRect = img.get_rect()
-#             imgRect.x = pos[0]
-#             imgRect.y = pos[1] + i * self.font.get_height() * 1.1
-#             self.rects.append(imgRect)
-        
-    
-#     def render(self, canvas:pygame.Surface):
-#         for image, rect in zip(self.images, self.rects):
-#             canvas.blit(image, rect)
+    def render(self):
+        self.draw()
