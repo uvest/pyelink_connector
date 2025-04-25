@@ -1,5 +1,4 @@
 import pygame as pygame
-import abc
 import numpy as np
 
 from pyelink_connector.pygame.connector import EyeConnector

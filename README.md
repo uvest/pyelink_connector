@@ -9,12 +9,12 @@ So, here we go: An EyeLink Connector Class developed for and tested on the EyeLi
 
 ---
 Current limitations
-* Currently `pyglet` and `pygame` are supported. Support for `psychopy` is coming soon.
+* When performing a drift correction you have to manually check that "Apply Correction" is toggled 'on'
 ---
 
 ## Installation
 
-If you want to use it only for pygame OR pyglet, see below.
+If you want to use it only for pygame, pyglet, OR psychopy see below.
 
 Install the package
 
@@ -22,13 +22,9 @@ Install the package
 pip install pyelink-connector
 ```
 
-If you want to install only the dependencies for pygame use
+If you want to install only the dependencies for pygame, pyglet or psychopy use the following command with only the one backend you need needed:
 ```bash
-pip install pyelink-connector[pygame]
-```
-If you want to install only the dependencies for pyglet use
-```bash
-pip install pyelink-connector[pyglet]
+pip install pyelink-connector[<pygame|pyglet|psychopy>]
 ```
 
 If you have no running pylink version for your EyeLink 1000 + yet, also see [Installing pylink](#installing-pylink) below.
@@ -38,8 +34,9 @@ The pylink_connector was built for the following packages
 
 * pygame-ce==2.5.3
 * pyglet==2.0.15
+* psychopy==2024.2.4
 
-Other versions might work as well.
+... and should support new versions. Other versions might work as well.
 
 It further requires software by [SR-Research](https://www.sr-research.com).
 
@@ -98,18 +95,18 @@ eyeConnector.openFile(file_name="pga")
 # Perform calibration and validation
 eyeConnector.runSetup(settings=settings)
 
-self.eyeConnector.startRecording(msg="test trial start")
+eyeConnector.startRecording(msg="test trial start")
 
 # show your stimuli
 ...
 
-self.eyeConnector.stopRecording()
+eyeConnector.stopRecording()
 
-self.eyeConnector.downloadFile()
+eyeConnector.downloadFile()
 eyeConnector.close()
 ```
 
-You can find more examples for pygame or pyglet on github.
+You can find more examples for pygame, pyglet and psychopy on github.
 
 ## Contact & Support
 

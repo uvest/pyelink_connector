@@ -2,10 +2,9 @@ from psychopy import visual, core, event
 from psychopy.hardware import keyboard
 from psychopy.visual import Window
 
-
-from src.pyelink_connector.psychopy.connector import EyeConnector
-from src.pyelink_connector.psychopy.utils import Target, MultiLineText
-from src.pyelink_connector.utils import *
+from pyelink_connector.psychopy.connector import EyeConnector
+from pyelink_connector.psychopy.utils import Target, MultiLineText
+from pyelink_connector.utils import *
 
 
 def main(settings:dict):
@@ -125,7 +124,6 @@ def main(settings:dict):
     win.flip()
     event.waitKeys(keyList=["space"])
 
-    print("byby")
 
 if __name__ == "__main__":
     settings = {
