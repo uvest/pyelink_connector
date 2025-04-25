@@ -1,17 +1,20 @@
 import pylink
-import pygame
+from psychopy import visual, core, event
+from psychopy.hardware import keyboard
+from psychopy.visual import Window
+
 import datetime
 import os
 
 from typing import Tuple
 
-from .utils import Target, MultiLineText
+from .utils import Target
 from ..utils import *
 
 
 class EyeConnector():
-    def __init__(self, win:pygame.Surface, host:str="100.1.1.1", eye:str="both", prefix:str="", download_directory:str="./eye_tracking/",
-                 sample_rate:int=1000, clock:pygame.time.Clock|None=None) -> None:
+    def __init__(self, win:Window, host:str="100.1.1.1", eye:str="both", prefix:str="", download_directory:str="./eye_tracking/",
+                 sample_rate:int=1000) -> None:
         """Create connector object to communicate with an EyeLink 1000+.
         Args:
             win (pygame.Surface): Surface to draw to during setup.
@@ -21,12 +24,10 @@ class EyeConnector():
                                     Could, e.g., combine experiment and participant ID. Defaults to "".
             download_directory (str, optional): Local directory to store downloaded EDF files to. Defaults to "./eye_tracking/".
             sample_rate (int, optional): Sampling rate. Should not exceed 1000 for tracking both eyes. Defaults to 1000.
-            clock (pygame.time.Clock|None, optional): A pygame clock for keeping the framerate. Defaults to None.
         """
         self.win = win
         self.host = host
         self.eyelink = self.connect(host)
-        self.clock = clock if clock is not None else pygame.time.Clock()
 
         assert(eye.lower() in ["both", "right", "left"])
         self.eye = eye.lower()
@@ -62,9 +63,7 @@ class EyeConnector():
         os.makedirs(self.download_directory, exist_ok=True)
 
         # assume the whole monitor is used. Get resolution from system.
-        _dispInfo = pygame.display.Info()
-        self._w = _dispInfo.current_w
-        self._h = _dispInfo.current_h
+        self._w, self._h = win.size
 
         # displayable objects
         self.bg_color = GREY

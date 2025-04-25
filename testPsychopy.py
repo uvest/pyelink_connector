@@ -1,10 +1,9 @@
-import psychopy
 from psychopy import visual, core, event
 from psychopy.hardware import keyboard
-from psychopy.visual import Window, GratingStim
+from psychopy.visual import Window
 
 
-# from src.pyelink_connector.psychopy.connector import EyeConnector
+from src.pyelink_connector.psychopy.connector import EyeConnector
 from src.pyelink_connector.psychopy.utils import Target
 from src.pyelink_connector.utils import *
 
@@ -14,9 +13,12 @@ def main(settings:dict):
     kb = keyboard.Keyboard()
     clock = core.Clock()
 
-    # eyeConnector = EyeConnector(win=win, prefix="TEST", eye=settings["eye"])
+    eyeConnector = EyeConnector(win=win, prefix="TEST", eye=settings["eye"])
     # open file on host
-    # eyeConnector.openFile(file_name="psp")
+    eyeConnector.openFile(file_name="psp")
+
+    width, height = win.size
+    print(f"win.size: {win.size}")
     
     # hide mouse
     win.setMouseVisible(False)
@@ -34,7 +36,7 @@ def main(settings:dict):
     event.waitKeys(keyList=["space"])
 
     # Setup/ Calibration
-    # eyeConnector.runSetup(settings=settings)
+    eyeConnector.runSetup(settings=settings)
 
     # Test/ Trial
     msg_header = visual.TextStim(win, pos=[0, +150], text="Setup complete")
@@ -47,9 +49,16 @@ def main(settings:dict):
     event.waitKeys(keyList=["space"])
 
     done = False
-    target_left = Target(win=win, color=(0, 1, 0))
-    target_right = Target(win=win, color=(0, 0, 1))
+    cursor_eye_left = Target(win=win, color=(0, 1, 0))
+    cursor_eye_right = Target(win=win, color=(0, 0, 1))
+    target = Target(win=win, color=(0, 1, 0))
     kb.clearEvents()
+
+    # variable for target movement
+    speed = 2
+    x_dir = 1 # x direction: start towards the right
+    y_dir = 1 # y direction: start towards the top
+    
     while not done:
         keys = kb.getKeys()
         for _k in keys:
@@ -59,10 +68,38 @@ def main(settings:dict):
                 done = True
         
         # udpate objects
-        target_left.set_pos((target_left.x + 1, target_left.y + 1))
+        if target.x > 0.5 * 0.8 * width:
+            x_dir = -1
+        if target.x < -0.5 * 0.8 * width:
+            x_dir = 1
+        if target.y > 0.5 * 0.8 * height:
+            y_dir = -1
+        if target.y < -0.5 * 0.8 * height:
+            y_dir = 1
+        target.set_pos((target.x + x_dir * speed, target.y + y_dir * speed))
+
+        # move cursor according to eye-gaze
+        samples = eyeConnector.getEyeSample()
+        if (settings["eye"] == "both"):
+            left_sample, right_sample = eyeConnector.getEyeSample()
+        elif (settings["eye"] == "left"):
+            left_sample = samples
+        elif (settings["eye"] == "right"):
+            right_sample = samples
+
+        if (settings["eye"] == "left") or (settings["eye"] == "both"):
+            cursor_eye_left.set_pos(left_sample.gaze)
+            # cursor_eye_left.set_x(left_sample.gaze[0])
+            # cursor_eye_left.set_y(left_sample.gaze[1])
+        if (settings["eye"] == "right") or (settings["eye"] == "both"):
+            cursor_eye_right.set_pos(right_sample.gaze)
+            # cursor_eye_right.set_x(right_sample.gaze[0])
+            # cursor_eye_right.set_y(right_sample.gaze[1])
 
         # render
-        target_left.render()
+        target.render()
+        cursor_eye_left.render()
+        cursor_eye_right.render()
 
         # update screen
         win.flip()
@@ -83,10 +120,10 @@ if __name__ == "__main__":
         "display": 0,
         "resolution": [2048, 1152],
         "render_fps": 60,
-        "font_name": "Times new Roman",
-        "font_size": 22,
-        "font_color": BLACK,
-        "bg_color": GREY,
+        # "font_name": "Times new Roman",
+        # "font_size": 22,
+        # "font_color": BLACK,
+        # "bg_color": GREY,
         }
     
     main(settings=settings)

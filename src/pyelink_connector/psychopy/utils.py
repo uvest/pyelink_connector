@@ -57,63 +57,6 @@ class Target():
         pass
     
 
-# class Target():
-#     def __init__(self, x=0, y=0, outer_color=WHITE, inner_color=BLACK) -> None:
-#         _outerCircleRadius = 10
-#         _innerCircleRadius = 5
-    
-#         # appearance
-#         self.image = pygame.Surface([_outerCircleRadius*2, _outerCircleRadius*2], pygame.SRCALPHA)
-#         # outer circle
-#         pygame.draw.circle(
-#             surface=self.image,
-#             color=outer_color,
-#             center=(_outerCircleRadius, _outerCircleRadius),
-#             radius=_outerCircleRadius
-#         )
-#         # inner circle
-#         pygame.draw.circle(
-#             surface=self.image,
-#             color=inner_color,
-#             center=(_outerCircleRadius, _outerCircleRadius),
-#             radius=_innerCircleRadius
-#         )
-
-#         # position
-#         self.rect = self.image.get_rect()
-#         self.rect.x = x - self.image.get_width()
-#         self.rect.y = y - self.image.get_height()
-
-#         self.hidden = False
-
-#     @property
-#     def x(self):
-#         return self.rect.x
-    
-#     @property
-#     def y(self):
-#         return self.rect.y
-    
-#     def hide(self):
-#         self.hidden = True
-
-#     def show(self):
-#         self.hidden = False
-    
-#     def set_x(self, x):
-#         self.rect.x = x
-
-#     def set_y(self, y):
-#         self.rect.y = y
-
-#     def render(self, canvas:pygame.Surface):
-#         if not self.hidden:
-#             canvas.blit(self.image, self.rect)
-
-#     def update(self, dt):
-#         pass
-
-
 # class MultiLineText():
 #     def __init__(self, text:str, 
 #                  pos:tuple|None=(0,0), screen_size:tuple|None=None, placement:str="center",
