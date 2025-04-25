@@ -68,7 +68,7 @@ class EyeConnector():
 
         # displayable objects
         self.bg_color = GREY
-        self.target = Target()
+        self.target = Target(self.win)
         
         # for handling communication to EyeLink
         self.dummy_sample = Sample((self._w, self._h), (self._w, self._h), (self._w, self._h), 0.)
@@ -265,12 +265,14 @@ class EyeConnector():
             \n\tPress D to drift correct.\
             \n\tPress Q/ENTER to quit setup and continue.\
             \n\nUse SPACE to manually accept a fixation."
-        mlText = MultiLineText(text)
+        mlText = MultiLineText(self.win, text)
+
+        # clear key events
+        self.kb.clearEvents()
 
         while not done:
             # handle events
-            keys = self.kb.getKeys()
-            for key in keys:
+            for key in self.kb.getKeys():
                 if key == 'c':
                     msg = self.calibrate()
                     # Update the status text
@@ -283,7 +285,7 @@ class EyeConnector():
                         \n\tPress D to drift correct.\
                         \n\tPress Q/ENTER to quit setup and continue.\
                         \n\nUse SPACE to manually accept a fixation."
-                    mlText = MultiLineText(text)
+                    mlText = MultiLineText(self.win, text)
                 elif key == 'v':
                     msg = self.validate()
                     # Update the status text
@@ -296,7 +298,7 @@ class EyeConnector():
                         \n\tPress D to drift correct.\
                         \n\tPress Q/ENTER to quit setup and continue.\
                         \n\nUse SPACE to manually accept a fixation."
-                    mlText = MultiLineText(text)
+                    mlText = MultiLineText(self.win, text)
                 elif key == 'd':
                     msg = self.driftCorrect()
                     # Update the status text
@@ -309,8 +311,8 @@ class EyeConnector():
                         \n\tPress D to drift correct.\
                         \n\tPress Q/ENTER to quit setup and continue.\
                         \n\nUse SPACE to manually accept a fixation."
-                    mlText = MultiLineText(text)
-                elif key == 'q' or key == "enter":
+                    mlText = MultiLineText(self.win, text)
+                elif key == 'q' or key == "return":
                     done = True
 
             # render text
@@ -318,7 +320,6 @@ class EyeConnector():
 
             # update window
             self.win.flip()
-            self.kb.clearEvents()
 
 
         self.eyelink.setOfflineMode()
@@ -353,13 +354,16 @@ class EyeConnector():
         self.eyelink.sendKeybutton(C_KEY, 0, pylink.KB_RELEASE)
         self.eyelink.setAcceptTargetFixationButton(SPACE_KEY)
 
+        # clear key events
+        self.kb.clearEvents()
+
         # DO calibration
         msg = ""
         done = False
+
         while not done:
             # handle events
-            keys = self.kb.getKeys()
-            for key in keys:
+            for key in self.kb.getKeys():
                 if key == 'space':
                     # (manually) accept target fixation
                     self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_PRESS)
@@ -368,7 +372,7 @@ class EyeConnector():
                     # repeat previous target
                     self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_PRESS)
                     self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_RELEASE)
-                elif key == 'q' or key == "esc":
+                elif key == 'q' or key == "escape":
                     self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
                     self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
                     self.c_status = 27
@@ -396,7 +400,6 @@ class EyeConnector():
 
             # update
             self.win.flip()
-            self.kb.clearEvents()
 
         # show mouse if it was shown
         self.win.setMouseVisible(_mousWasVisible)
@@ -420,20 +423,22 @@ class EyeConnector():
             \nPress C to calibrate again.\
             \nPress V to validate.\
             \nPress BACKSPACE/ DELETE to discard the calibration and return."
-        mlText = MultiLineText(text=text)
+        mlText = MultiLineText(self.win, text)
 
         # hide mouse if shown
         _mousWasVisible = self.win.mouseVisible
         self.win.setMouseVisible(False)
+
+        # clear key events
+        self.kb.clearEvents()
 
         callback = None
         msg = ""
         done = False
         while not done:
             # handle events
-            keys = self.kb.getKeys()
-            for key in keys:
-                if key == 'enter':
+            for key in self.kb.getKeys():
+                if key == 'return':
                     # accept calibration.
                     self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_PRESS)
                     self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_RELEASE)
@@ -449,7 +454,7 @@ class EyeConnector():
                 if key == 'v':
                     callback = self.validate
                     done = True
-                if key == 'backspace' or key == 'del':
+                if key == 'backspace' or key == 'delete':
                     # Discard calibration without repeating
                     self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
                     self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
@@ -463,7 +468,6 @@ class EyeConnector():
 
             # update
             self.win.flip()
-            self.kb.clearEvents()
 
         # show mouse if it was visible
         self.win.setMouseVisible(_mousWasVisible)
@@ -493,6 +497,9 @@ class EyeConnector():
         _mousWasVisible = self.win.mouseVisible
         self.win.setMouseVisible(False)
 
+        # clear key events
+        self.kb.clearEvents()
+
         # DO validation
         msg = ""
         done = False
@@ -509,7 +516,7 @@ class EyeConnector():
                     self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_PRESS)
                     self.eyelink.sendKeybutton(BACKSPACE_KEY, 0, pylink.KB_RELEASE)
 
-                if key == 'q' or key == 'esc':
+                if key == 'q' or key == 'escape':
                     self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
                     self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
                     self.v_status = 27
@@ -559,11 +566,14 @@ class EyeConnector():
             \nPress ENTER to accept the validation and continue.\
             \nPress V to validate again.\
             \nPress BACKSPACE/ DELETE to discard the validation."
-        mlText = MultiLineText(text=text)
+        mlText = MultiLineText(self.win, text)
 
         # hide mouse if shown
         _mousWasVisible = self.win.mouseVisible
         self.win.setMouseVisible(False)
+
+        # clear key events
+        self.kb.clearEvents()
 
         callback = None
         msg = None
@@ -571,7 +581,7 @@ class EyeConnector():
         while not done:
             # handle events
             for key in self.kb.getKeys():
-                if key == 'enter':
+                if key == 'return':
                     # accept validation.
                     self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_PRESS)
                     self.eyelink.sendKeybutton(ENTER_KEY, 0, pylink.KB_RELEASE)
@@ -586,7 +596,7 @@ class EyeConnector():
                     callback = self.validate
                     done = True
 
-                if key == 'backspace' or key == 'del':
+                if key == 'backspace' or key == 'delete':
                     # Discard validation without repeating
                     self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
                     self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
@@ -634,6 +644,9 @@ class EyeConnector():
         # make sure "Apply correction" is active
         # ... TODO
 
+        # clear key events
+        self.kb.clearEvents()
+
         done = False
         while not done:
             # handle events
@@ -642,7 +655,7 @@ class EyeConnector():
                     self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_PRESS)
                     self.eyelink.sendKeybutton(SPACE_KEY, 0, pylink.KB_RELEASE)
 
-                if key == 'q' or key == 'esc':
+                if key == 'q' or key == 'escape':
                     # leave drift correct mode on tracker
                     self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_PRESS)
                     self.eyelink.sendKeybutton(ESC_KEY, 0, pylink.KB_RELEASE)
