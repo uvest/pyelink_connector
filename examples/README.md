@@ -11,4 +11,5 @@ python examplePygame.py
 The examples first open the setup screen and afterwards implement a simple tracking task where a moving target and the current eye-positions are displayed.
 
 ## Known bugs
-In the `examplePygame.py` the target may get stuck in a corner.
+* In the `examplePygame.py` the target may get stuck in a corner.
+* In the `examplePsychopy.py` a RunTime error might occurr if you try to recalibrate or revalidate several times.

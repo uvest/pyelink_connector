@@ -1,20 +1,27 @@
 ## Code structure
 
-**Deprecated**
-
-`pygletEyeLink.py` - contains the EyeConnector class which handles the communication with and setup of the EyeLink 1000+ (binocular mode only)
-
-`test_pygletEyeLink.py` - a simple testing script that showcases the usage of the pyglet pylink connector.
-
-**Old code parts**
-* connector.py - old connector class supporting pygame
-* calibration/pygame - CalibationGraphics class provided by the pylink package
-* test_pygame - simple test script running through the calibration using pygame logic
 
 ## API
 
+Have a look at the functions doc strings for more details.
 
-### Connector object
+### Status codes
+Status codes are taken from the pylink manual and are defined as followed:
+
+* 1000 = not done/ still running
+* 0 = success
+* 27 = Aborted (ESC pressed)
+* 1 = failed (poor result)
+* -1 = failed
+* 2 = ... 
+
+---
+
+**Deprecated** <br>
+The following information might be deprecated.
+
+
+### Pyglet specific information
 All you need to initialize a connector object is a pyglet window. All other parameters are optional but may help to manage your experiment.
 
 ```py
@@ -57,16 +64,6 @@ Upon returning from the setup, the connector will call the provided *callback* f
 This callback function must accept one integer parameter which is the respective status of the performed setup action:
 * If returning from the setup status screen (as for calibration, validation and drift correction that does not immediately return), the callback is called with the current calibration status
 * If returning from the drift correction directly, the callback is called with the current drift correction status
-
-#### Status codes
-Status codes are taken from the pylink manual and are defined as followed:
-
-* 1000 = not done/ still running
-* 0 = success
-* 27 = Aborted (ESC pressed)
-* 1 = failed (poor result)
-* -1 = failed
-* 2 = ... 
 
 
 ### Handling files
