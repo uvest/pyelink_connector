@@ -108,6 +108,9 @@ eyeConnector.close()
 
 You can find more examples for pygame, pyglet and psychopy on github.
 
+## Build locally
+This package was build using `'python -m build`. <br>
+
 ## Contact & Support
 
 I am happy for any bug reports or feature requests! Please use github for these.
