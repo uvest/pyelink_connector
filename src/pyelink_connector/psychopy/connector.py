@@ -166,7 +166,7 @@ class EyeConnector():
     def downloadFile(self) -> None:
         """Closes open file and downloads it to self.download_directory."""
         self.closeFile()
-        self.eyelink.receiveDataFile(self.edf_file_name, self.download_directory + self.edf_file_name)
+        self.eyelink.receiveDataFile(self.edf_file_name, os.path.join(self.download_directory + self.edf_file_name))
 
 
     ### TRACKING
