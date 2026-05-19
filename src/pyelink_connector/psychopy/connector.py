@@ -239,6 +239,18 @@ class EyeConnector():
                 raise(ValueError, "Received sample is neither left nor right.")
                 # return self.dummy_sample
 
+    def sendMessage(self, msg:str, send_timestamp=True) -> None:
+        """Send a message to the eyelink data file.
+        Args:
+            msg (str): Message to send
+            send_timestamp (bool, optional): If true, also send the local timestamp in the message. 
+                Defaults to True.
+        """
+        if send_timestamp:
+            timestamp = datetime.datetime.now()
+            self.eyelink.sendMessage(f"TIMESTAMP {timestamp} - {msg}")
+        else:
+            self.eyelink.sendMessage(f"{msg}")
 
     ####################### PYGAME specific
     ### GENERAL SETUP ENTRY

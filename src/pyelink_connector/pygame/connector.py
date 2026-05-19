@@ -28,6 +28,13 @@ class EyeConnector():
         self.eyelink = self.connect(host)
         self.clock = clock if clock is not None else pygame.time.Clock()
 
+        try:
+            self.win_width = self.win.width
+            self.win_height = self.win.height
+        except AttributeError:
+            self.win_width = self.win.get_width()
+            self.win_height = self.win.get_height()
+
         assert(eye.lower() in ["both", "right", "left"])
         self.eye = eye.lower()
         # set eye on host
@@ -239,6 +246,18 @@ class EyeConnector():
                 raise(ValueError, "Received sample is neither left nor right.")
                 # return self.dummy_sample
 
+    def sendMessage(self, msg:str, send_timestamp=True) -> None:
+        """Send a message to the eyelink data file.
+        Args:
+            msg (str): Message to send
+            send_timestamp (bool, optional): If true, also send the local timestamp in the message. 
+                Defaults to True.
+        """
+        if send_timestamp:
+            timestamp = datetime.datetime.now()
+            self.eyelink.sendMessage(f"TIMESTAMP {timestamp} - {msg}")
+        else:
+            self.eyelink.sendMessage(f"{msg}")
 
     ####################### PYGAME specific
     ### GENERAL SETUP ENTRY
@@ -660,7 +679,7 @@ class EyeConnector():
         _mousWasVisible = pygame.mouse.get_visible()
         pygame.mouse.set_visible(False)
 
-        self.eyelink.startDriftCorrect(self.win.width//2, self.win.height//2)
+        self.eyelink.startDriftCorrect(self.win_width//2, self.win_height//2)
         # make sure "Apply correction" is active
         # ... TODO
 

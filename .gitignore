@@ -1,3 +1,6 @@
 *__pycache__
 *.edf
 .venv
+*.github
+upload_notes.md
+

@@ -31,7 +31,7 @@ class MultiLineText():
         self.images = []
         self.rects = []
         for i, line in enumerate(text.split("\n")):
-            lineImage = self.font.render(line.strip(), antialias=True, color=fc)
+            lineImage = self.font.render(line.strip(), True, fc) # text, antialias, color
             self.images.append(lineImage)
 
         # If screen_size is set, overwrite pos parameter according to placement
